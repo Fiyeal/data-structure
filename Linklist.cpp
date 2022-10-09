@@ -1,21 +1,18 @@
-#include <cstddef>
 #include <iostream>
 #include <new>
 
 struct Node {
     int value;
-    Node *next;
+    Node *next = nullptr;
 };
 
 class Head {
 private:
-    int size;
-    Node *next;
+    int size; // 链表长度
+    Node *next; // 指向下一节点
 
 public:
-    Head() : size(0), next(nullptr) {};
-    inline bool empty() const { return size == 0; }
-    inline int get_size() const { return size; }
+    Head() : size(0), next(nullptr) { };
     
     // 头插法以数组构造链表
     Head(int a[], int len) : size(0), next(nullptr)
@@ -39,6 +36,11 @@ public:
         }
     }
 
+    // 判空
+    inline bool empty() const { return size == 0; }
+    
+    // 获取链表长度
+    inline int get_size() const { return size; }
 
     // 在pos位置插入值val
     void insert(int pos, int val)
@@ -112,6 +114,8 @@ public:
     // 排序，冒泡排序法，复杂度O(n^2)
     void sort()
     {
+        if (this -> empty())
+            return;
         bool flag = true;
         while (flag) {
             flag = false;
@@ -122,38 +126,129 @@ public:
                 }
             }
         }
+        return;
     }
 
-    void shift_left(int num)
+    // 左右移位，dir为方向，l表示左移位，r表示右移位
+    void shift(int num, char dir)
     {
+        if (!(dir == 'r' || dir == 'l')) {
+            std::cout << "请输入正确的方向指示(l/r)" << std::endl;
+            return;
+        }
         if (num < 0) {
             std::cout << "所移位数不能为负" << std::endl;
             return;
         }
         num = num % size;
-        int i = 0;
+        if (num == 0 || this -> empty())
+            return;
+        if (dir == 'r')
+            num = size - num;
+        int i = 1;
         auto p = this -> next;
-        while (i < num) {
+        while (i < num) { // 找到截断部分的左侧节点
             p = p -> next;
             ++i;
         }
+        auto trail = this -> next;
+        while (trail -> next != nullptr) // 找到链表尾节点
+            trail = trail -> next;
+        trail -> next = this -> next;
+        this -> next = p -> next;
+        p -> next = nullptr;
+        return;
     }
 
+
+    // 先排序，再去重
+    void remove_duplicates()
+    {
+        if (this -> empty())
+            return;
+        this -> sort();
+        auto pre = this -> next;
+        auto p = pre -> next;
+        while (p != nullptr) {
+            if (pre -> value == p -> value) {
+                auto tmp = p;
+                p = p -> next;
+                delete tmp;
+                --size;
+            }
+            else {
+                pre -> next = p;
+                pre = p;
+                p = pre -> next;
+            }
+        }
+        pre -> next = nullptr;
+        return;
+    }
+    
+
+    // 利用头插法进行reverse
+    void reverse()
+    {
+        if (this -> empty() || size == 1)
+            return;
+        auto p = this -> next;
+        this -> next = nullptr;
+        while (p != nullptr) {
+            auto tmp = p;
+            p = p -> next;
+            tmp -> next = this -> next;
+            this -> next = tmp;
+        }
+        return;
+    }
+
+    // 两个有序列表合并，结果保持为一个有序列表
+    void combine(Head &h)
+    {
+        this -> sort();
+        h.sort();
+        if (h.empty())
+            return;
+        Node a{0, this -> next}, b{0, h.next};
+        Node *pa = &a, *pb = &b;
+        while (pa -> next && pb -> next) {
+            if (pa -> next -> value > pb -> next -> value) {
+                auto p = new Node();
+                p -> value = pb -> next -> value;
+                p -> next = pa -> next;
+                pa -> next = p;
+                pb = pb -> next;
+            }
+            pa = pa -> next;
+        }
+        if (pa -> next == nullptr && pb -> next != nullptr) {
+            while (pb -> next != nullptr) {
+                auto p = new Node();
+                p -> value = pb -> next -> value;
+                p -> next = pa -> next;
+                pa -> next = p;
+                pa = pa -> next;
+                pb = pb -> next;
+            }
+        }
+        this -> next = a.next;
+        return;
+    }
 };
 
 using List = Head;
 
 
 int main() {
-    int a[] = {0, 1, 2, 3, 4, 5, 3};
-    List l(a, sizeof(a)/sizeof(int));
-    l.show();
-    l.sort();
-    // l.insert(0, 22);
-    // std::cout << l.get_size() << std::endl;
-    // l.show();
-    // l.remove(0);
-    // std::cout << l.get_size() << std::endl;
-    l.show();
+    int a[] = {0, 1, 2, 3};
+    int b[] = {1, 3, 3, 4, 5};
+    List l1(a, sizeof(a)/sizeof(int));
+    List l2(b, sizeof(b)/sizeof(int));
+
+    l1.show();
+    l2.show();
+    l1.combine(l2);
+    l1.show();
     return 0;
 }
